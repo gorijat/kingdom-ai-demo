@@ -31,3 +31,15 @@
 - curl -X POST http://localhost:5000/chat -H "Content-Type: application/json" -d '{"message": "..."}'
 - pwd — proveri gde si u terminalu
 - git add . / git commit -m "..." — RADI IZ KORENA projekta (kingdom-ai-final)
+
+
+## Sedmica 1 — deo 2: React setup
+
+### Šta je urađeno
+- React podignut preko Vite (ne create-react-app — CRA je napušten, Vite je brži)
+- npm create vite@5 client -- --template react (fiksirana v5 zbog kompatibilnosti)
+- Dev server radi na http://localhost:5173
+
+### Ključni koncept
+- Vite koristi native ES modules u razvoju → skoro trenutan start i hot reload
+- Backend (port 5000) i frontend (port 5173) rade odvojeno, komuniciraju preko HTTP poziva
