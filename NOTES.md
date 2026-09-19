@@ -49,3 +49,13 @@
 - Završeno: Sedmica 1 kompletno (backend + React chat UI, osnovna veza radi)
 - Sledeće: 2.1 Function/Tool calling — AI bira i poziva backend funkcije
 - Streaming u UI (ReadableStream) odloženo kao "polish" za kasnije
+
+
+## Status: gde smo stali (ISPRAVKA)
+Primetili smo da smo preskočili delove 1.3/1.4. Pre tool callinga (2.1), redosled za sutra:
+1. Istorija razgovora i state management (KLJUČNO - preduslov za tool calling)
+2. Structured Output / JSON (1.4)
+3. Loading/error states + prekid generisanja (AbortController)
+4. Markdown prikaz odgovora
+5. UI streaming (ReadableStream)
+6. Odloženo za Sedmicu 4: rate limits, retry, token tracking, detaljniji error handling
