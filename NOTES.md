@@ -43,3 +43,9 @@
 ### Ključni koncept
 - Vite koristi native ES modules u razvoju → skoro trenutan start i hot reload
 - Backend (port 5000) i frontend (port 5173) rade odvojeno, komuniciraju preko HTTP poziva
+
+
+## Status: gde smo stali
+- Završeno: Sedmica 1 kompletno (backend + React chat UI, osnovna veza radi)
+- Sledeće: 2.1 Function/Tool calling — AI bira i poziva backend funkcije
+- Streaming u UI (ReadableStream) odloženo kao "polish" za kasnije
