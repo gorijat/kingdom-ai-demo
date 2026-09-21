@@ -22,7 +22,7 @@
 - [x] Komunikacija React ↔ NodeJS
 
 ## 1.4 Structured Output / JSON
-- [ ] Pouzdani strukturirani rezultati — [KOD, obavezno - temelj za tool calling]
-- [ ] Definisanje JSON struktura — [KOD, obavezno]
-- [ ] Validacija odgovora prije akcije — [KOD, obavezno]
-- [ ] Zašto je structured output važniji od slobodnog teksta — [TEORIJA]
+- [x] Pouzdani strukturirani rezultati — [KOD, obavezno - temelj za tool calling]
+- [x] Definisanje JSON struktura — [KOD, obavezno]
+- [x] Validacija odgovora prije akcije — [KOD, obavezno]
+- [x] Zašto je structured output važniji od slobodnog teksta — [TEORIJA]
