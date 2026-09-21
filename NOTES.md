@@ -59,3 +59,32 @@ Primetili smo da smo preskočili delove 1.3/1.4. Pre tool callinga (2.1), redosl
 4. Markdown prikaz odgovora
 5. UI streaming (ReadableStream)
 6. Odloženo za Sedmicu 4: rate limits, retry, token tracking, detaljniji error handling
+
+
+## Sedmica 1 — KOMPLETNO (backend + frontend + JSON + UX)
+
+### Šta je urađeno
+- Express server, OpenAI klijent, /chat ruta sa streaming (backend)
+- React + Vite chat UI, povezan na backend
+- Istorija razgovora — messages niz (frontend pamti, backend prima ceo kontekst)
+- Structured Output — /extract ruta, response_format: json_object
+- Validacija JSON odgovora PRE upotrebe (tip + poslovna logika)
+- Error states + AbortController (prekid generisanja)
+- Markdown prikaz (react-markdown)
+
+### Ključni princip koji se provlači kroz sve
+NIKAD ne veruj slepo AI odgovoru koji ide dalje u sistem (akcija/baza).
+Uvek validiraj na BACKENDU, nikad se ne oslanjaj samo na frontend proveru.
+Korisnik može poslati bilo šta (čak i mimo UI-ja, direktno na API) —
+mi kontrolišemo šta IZLAZI i šta se IZVRŠAVA, ne šta ULAZI.
+
+### Tok podataka (bitno za pamćenje)
+Browser → fetch → Node backend → OpenAI API → nazad Node backendu
+→ (validacija/obrada) → nazad browseru (res.json/res.write)
+Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
+
+### Odloženo za kasnije
+- UI streaming (ReadableStream) - vraćamo se posle tool callinga
+- Rate limits, retry, token tracking - Sedmica 4 (polish)
+
+### Sledeće: 2.1 Tool / Function Calling
