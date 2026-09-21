@@ -88,3 +88,8 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
 - Rate limits, retry, token tracking - Sedmica 4 (polish)
 
 ### Sledeće: 2.1 Tool / Function Calling
+
+
+### Dodatni UX fix (van originalnog plana, ali koristan)
+- Auto-scroll na dno chat-a: useRef + useEffect sa [messages] dependency,
+  scrollIntoView({ behavior: 'smooth' }) na praznom div na kraju liste poruka

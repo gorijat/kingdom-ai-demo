@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import ReactMarkdown from 'react-markdown';
 
@@ -8,6 +8,16 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [controller, setController] = useState(null);
+
+  //ovaj kod je radi bolje citljivosti da se prikaziuje stranica pravilno
+
+  const messagesEndRef = useRef(null);
+
+useEffect(() => {
+  messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+}, [messages]);
+
+  //END kod za bolju citljivost
 
   const sendMessage = async () => {
     const newMessages = [...messages, { role: 'user', content: input }];
@@ -57,13 +67,14 @@ function App() {
     <div style={{ padding: '2rem', maxWidth: '600px', margin: '0 auto' }}>
       <h1>Kingdom AI Assistant</h1>
 
-      <div style={{ border: '1px solid #ccc', padding: '1rem', minHeight: '300px', marginBottom: '1rem' }}>
+      <div style={{ border: '1px solid #ccc', padding: '1rem', minHeight: '400px', overflowY: 'auto', marginBottom: '1rem' }}>
         {messages.map((msg, index) => (
           <div key={index} style={{ marginBottom: '0.5rem' }}>
             <strong>{msg.role === 'user' ? 'Ti: ' : 'AI: '}</strong>
             <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       <input
