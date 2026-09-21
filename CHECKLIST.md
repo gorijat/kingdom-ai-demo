@@ -17,7 +17,7 @@
 - [x] Jednostavan chat interfejs
 - [x] Istorija razgovora i upravljanje stanjem — [KOD, obavezno - preduslov za tool calling]
 - [ ] Streaming teksta u realnom vremenu (UI) — [KOD, ali može posle tool callinga]
-- [ ] Loading/error states i prekid generisanja — [KOD, kratko]
+- [x] Loading/error states i prekid generisanja — [KOD, kratko]
 - [ ] Markdown i prikaz koda — [KOD, kratko - koristićemo gotovu biblioteku]
 - [x] Komunikacija React ↔ NodeJS
 
