@@ -93,3 +93,10 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
 ### Dodatni UX fix (van originalnog plana, ali koristan)
 - Auto-scroll na dno chat-a: useRef + useEffect sa [messages] dependency,
   scrollIntoView({ behavior: 'smooth' }) na praznom div na kraju liste poruka
+
+
+### Rešeni problem: better-sqlite3 na starijem sistemu
+- Node-gyp kompajliranje je zahtevalo Xcode Command Line Tools (xcode-select --install)
+- Najnovija verzija better-sqlite3 (13.x) je pravila Segmentation fault na Node 20.9 / macOS Big Sur
+- Rešenje: better-sqlite3@9.6.0 (starija, stabilnija verzija za ovu kombinaciju Node/macOS)
+- Lekcija: EBADENGINE upozorenja NISU uvek bezopasna - mogu ukazivati na pravu binarnu inkompatibilnost
