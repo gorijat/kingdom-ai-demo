@@ -18,7 +18,7 @@
 - [x] Istorija razgovora i upravljanje stanjem — [KOD, obavezno - preduslov za tool calling]
 - [ ] Streaming teksta u realnom vremenu (UI) — [KOD, ali može posle tool callinga]
 - [x] Loading/error states i prekid generisanja — [KOD, kratko]
-- [ ] Markdown i prikaz koda — [KOD, kratko - koristićemo gotovu biblioteku]
+- [x] Markdown i prikaz koda — [KOD, kratko - koristićemo gotovu biblioteku]
 - [x] Komunikacija React ↔ NodeJS
 
 ## 1.4 Structured Output / JSON

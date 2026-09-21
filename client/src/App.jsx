@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import './App.css';
+import ReactMarkdown from 'react-markdown';
 
 function App() {
   const [input, setInput] = useState('');
@@ -60,7 +61,7 @@ function App() {
         {messages.map((msg, index) => (
           <div key={index} style={{ marginBottom: '0.5rem' }}>
             <strong>{msg.role === 'user' ? 'Ti: ' : 'AI: '}</strong>
-            {msg.content}
+            <ReactMarkdown>{msg.content}</ReactMarkdown>
           </div>
         ))}
       </div>
