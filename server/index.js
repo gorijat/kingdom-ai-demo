@@ -24,7 +24,7 @@ app.get('/', (req, res) => {
 //ABout streaming, prva ruta koja koristi streaming i generalno prva ruta /chat
 
 app.post('/chat', async (req, res) => {
-    const { message } = req.body;
+    const { messages } = req.body;
   
     res.setHeader('Content-Type', 'text/plain');
     res.setHeader('Transfer-Encoding', 'chunked');
@@ -34,7 +34,7 @@ app.post('/chat', async (req, res) => {
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima.' },
-          { role: 'user', content: message }
+            ...messages
         ],
         stream: true,
       });
