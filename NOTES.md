@@ -100,3 +100,26 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
 - Najnovija verzija better-sqlite3 (13.x) je pravila Segmentation fault na Node 20.9 / macOS Big Sur
 - Rešenje: better-sqlite3@9.6.0 (starija, stabilnija verzija za ovu kombinaciju Node/macOS)
 - Lekcija: EBADENGINE upozorenja NISU uvek bezopasna - mogu ukazivati na pravu binarnu inkompatibilnost
+
+
+## Sedmica 2 — Tool/Function Calling (2.1) KOMPLETNO
+
+### Šta je urađeno
+- tools lista sa definicijama pronadjiKupca i istorijaKupovine (name, description, parameters)
+- dostupneFunkcije mapa (ime stringa -> prava JS funkcija)
+- /chat ruta prepravljena: while petlja koja hvata tool_calls, izvršava
+  prave funkcije, vraća rezultat modelu (role: 'tool'), dok model ne
+  vrati finalan tekst
+
+### Ključni koncept
+- Model NE izvršava kod - samo predlaže poziv (tool_calls), backend
+  validira i izvršava
+- Model može tražiti VIŠE poziva u nizu (prvo pronadjiKupca da dobije ID,
+  pa istorijaKupovine sa tim ID-jem) - to je razlog za while petlju
+- /chat ruta trenutno NIJE streaming (privremeno - res.json na kraju,
+  ne res.write) jer stream + tool calling zajedno je složenije
+
+### Bug koji smo rešili
+- curl u VS Code integrisanom terminalu je "ćutao" (visio), isti curl
+  u običnom Terminal.app je radio odmah - koristiti spoljašnji terminal
+  za curl testiranje, VS Code terminal samo za npm run dev
