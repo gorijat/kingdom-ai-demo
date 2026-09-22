@@ -4,9 +4,54 @@ const cors = require('cors');
 
 const OpenAI = require('openai'); 
 
+const { pronadjiKupca, istorijaKupovine } = require('./functions');
+
 const openai = new OpenAI({ // Klient za OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+//Definicija alata koje AI moze da koristi
+const tools = [ 
+    {
+      type: 'function',
+      function: {
+        name: 'pronadjiKupca',
+        description: 'Pronalazi kupca po imenu ili delu imena i vraća njegove osnovne podatke (id, ime, email).',
+        parameters: {
+          type: 'object',
+          properties: {
+            ime: {
+              type: 'string',
+              description: 'Ime ili deo imena kupca koji se traži'
+            }
+          },
+          required: ['ime']
+        }
+      }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'istorijaKupovine',
+        description: 'Vraća listu proizvoda koje je kupac naručio, sortiranu od najnovije ka najstarijoj kupovini.',
+        parameters: {
+          type: 'object',
+          properties: {
+            kupacId: {
+              type: 'number',
+              description: 'ID kupca čija se istorija kupovine traži'
+            }
+          },
+          required: ['kupacId']
+        }
+      }
+    }
+  ];
+  //END Definicija alata koje AI moze da koristi
+  const dostupneFunkcije = { //ovim povezujemo nazive funkcija sa stvarnim implementacijama
+    pronadjiKupca,
+    istorijaKupovine
+  };
 
 
 
@@ -26,28 +71,55 @@ app.get('/', (req, res) => {
 app.post('/chat', async (req, res) => {
     const { messages } = req.body;
   
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Transfer-Encoding', 'chunked');
+    let konverzacija = [
+      { role: 'system', content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima.' },
+      ...messages
+    ];
   
     try {
-      const stream = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima.' },
-            ...messages
-        ],
-        stream: true,
-      });
+      let nastaviPetlju = true;
   
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        res.write(content);
+      while (nastaviPetlju) {
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: konverzacija,
+          tools: tools,
+        });
+  
+        const poruka = response.choices[0].message;
+  
+        if (poruka.tool_calls) {
+          konverzacija.push(poruka);
+  
+          for (const poziv of poruka.tool_calls) {
+            const imeFunkcije = poziv.function.name;
+            const argumenti = JSON.parse(poziv.function.arguments);
+  
+            console.log(`AI poziva funkciju: ${imeFunkcije}`, argumenti);
+  
+            const funkcija = dostupneFunkcije[imeFunkcije];
+            let rezultat;
+  
+            if (!funkcija) {
+              rezultat = { error: 'Nepoznata funkcija' };
+            } else {
+              rezultat = funkcija(...Object.values(argumenti));
+            }
+  
+            konverzacija.push({
+              role: 'tool',
+              tool_call_id: poziv.id,
+              content: JSON.stringify(rezultat)
+            });
+          }
+        } else {
+          res.json({ reply: poruka.content });
+          nastaviPetlju = false;
+        }
       }
-  
-      res.end();
     } catch (error) {
       console.error(error);
-      res.status(500).end('Greška prilikom komunikacije sa AI modelom');
+      res.status(500).json({ error: 'Greška prilikom komunikacije sa AI modelom' });
     }
   });
 
