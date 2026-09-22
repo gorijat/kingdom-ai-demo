@@ -123,3 +123,9 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
 - curl u VS Code integrisanom terminalu je "ćutao" (visio), isti curl
   u običnom Terminal.app je radio odmah - koristiti spoljašnji terminal
   za curl testiranje, VS Code terminal samo za npm run dev
+
+
+### Bug: frontend nije parsirao JSON nakon prelaska na tool calling
+- Stara /chat ruta je slala čist tekst (res.write), frontend je radio response.text()
+- Nova /chat ruta šalje JSON (res.json({reply: ...})), frontend MORA response.json()
+  i data.reply, inače se prikazuje sirov JSON string na ekranu
