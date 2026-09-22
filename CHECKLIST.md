@@ -1,28 +1,65 @@
+# Kingdom AI — Checklist (SVE stavke iz originalnog plana)
+
 ## 1.1 Osnove AI i LLM modela
 - [x] Šta su LLM modeli i kako rade na praktičnom nivou
 - [x] Tokeni, context window, temperature i ograničenja modela
 - [x] System, user i assistant poruke
-- [x] Osnove prompt engineeringa — [TEORIJA + malo prakse kroz system prompt koji već pišemo]
+- [x] Osnove prompt engineeringa — [TEORIJA + praksa kroz system prompt]
 - [x] Hallucinations, validacija rezultata, sigurnosna ograničenja — [TEORIJA]
 - [x] Pregled vodećih modela, cloud vs open-source — [TEORIJA]
 
 ## 1.2 AI API integracija kroz NodeJS
 - [x] Slanje zahteva AI modelu
-- [x] Streaming odgovora (backend)
-- [ ] Error handling, rate limits, retry logika — [TEORIJA sada, KOD u Sedmici 4]
+- [x] Streaming odgovora (backend) — napomena: /chat sada NIJE streaming zbog tool callinga, vraćamo se na ovo
+- [ ] Error handling, rate limits, retry logika — [TEORIJA urađena, KOD u Sedmici 4]
 - [x] Sigurno čuvanje API ključeva
-- [ ] Praćenje tokena, troškova, logovanje — [TEORIJA sada, KOD u Sedmici 4]
+- [ ] Praćenje tokena, troškova, logovanje — [KOD u Sedmici 4]
 
 ## 1.3 ReactJS + AI
 - [x] Jednostavan chat interfejs
-- [x] Istorija razgovora i upravljanje stanjem — [KOD, obavezno - preduslov za tool calling]
-- [ ] Streaming teksta u realnom vremenu (UI) — [KOD, ali može posle tool callinga]
-- [x] Loading/error states i prekid generisanja — [KOD, kratko]
-- [x] Markdown i prikaz koda — [KOD, kratko - koristićemo gotovu biblioteku]
+- [x] Istorija razgovora i upravljanje stanjem
+- [ ] Streaming teksta u realnom vremenu (UI) — odloženo, vraćamo se posle tool callinga
+- [x] Loading/error states i prekid generisanja
+- [x] Markdown i prikaz koda
 - [x] Komunikacija React ↔ NodeJS
 
 ## 1.4 Structured Output / JSON
-- [x] Pouzdani strukturirani rezultati — [KOD, obavezno - temelj za tool calling]
-- [x] Definisanje JSON struktura — [KOD, obavezno]
-- [x] Validacija odgovora prije akcije — [KOD, obavezno]
+- [x] Pouzdani strukturirani rezultati
+- [x] Definisanje JSON struktura
+- [x] Validacija odgovora prije akcije
 - [x] Zašto je structured output važniji od slobodnog teksta — [TEORIJA]
+
+## 2.1 Tool / Function Calling
+- [x] Kako AI bira unaprijed definisanu backend funkciju
+- [x] Prosljeđivanje i validacija parametara
+- [x] Pozivanje internih API-ja i vraćanje rezultata modelu
+- [x] Odvajanje: AI odlučuje, backend kontroliše
+(implementirano: pronadjiKupca + istorijaKupovine, testirano end-to-end preko curl-a, radi višekoračni poziv)
+
+## 2.2 Embeddings i semantic search
+- [ ] Šta su embeddings i čemu služe
+- [ ] Osnove similarity pretrage i vector baza
+- [ ] Semantic search nad proizvodima/dokumentima
+- [ ] Test sa najmanje nekoliko stotina zapisa
+
+## 2.3 RAG
+- [ ] Povezivanje AI modela sa internom dokumentacijom
+- [ ] Rad sa PDF/FAQ/podacima o proizvodima
+- [ ] Retrieval relevantnog sadržaja prije generisanja
+- [ ] Tok: React → NodeJS → pretraga → LLM → odgovor
+
+## 2.4 AI Agents
+- [ ] Agent loop i višekoračni zadaci
+- [ ] Tools, planning, kontrolisana memorija
+- [ ] Kombinovanje više funkcija u jedan proces
+
+## 2.5 Povezivanje sa postojećim sistemima
+- [x] REST API integracije — [TEORIJA]
+- [ ] Baza podataka (SQLite u našem slučaju) — [KOD urađeno kroz 2.1, formalno se štiklira ovde]
+- [ ] Authentication, permissions, kontrola pristupa
+- [x] AI nema direktan pristup bazi, samo kroz backend funkcije — [već primenjeno u praksi kroz tool calling]
+
+## 2.6 MCP
+- [ ] Osnovni koncept MCP-a
+- [ ] Kako se AI standardizovano povezuje sa alatima/servisima
+- [ ] Jednostavan testni MCP server (opciono)

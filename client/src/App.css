@@ -40,3 +40,16 @@
 .read-the-docs {
   color: #888;
 }
+
+.chat-message ul, .chat-message ol {
+  margin: 0.25rem 0;
+  padding-left: 1.5rem;
+}
+
+.chat-message li {
+  margin-bottom: 0.25rem;
+}
+
+.chat-message p {
+  margin: 0.25rem 0;
+}

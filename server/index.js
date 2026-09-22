@@ -72,7 +72,7 @@ app.post('/chat', async (req, res) => {
     const { messages } = req.body;
   
     let konverzacija = [
-      { role: 'system', content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima.' },
+        { role: 'system', content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, jasno i profesionalno.' },
       ...messages
     ];
   

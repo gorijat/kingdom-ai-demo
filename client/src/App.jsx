@@ -41,8 +41,8 @@ useEffect(() => {
       throw new Error('Server je vratio gresku');
     }
 
-    const text = await response.text();
-    setMessages([...newMessages, { role: 'assistant', content: text }]);
+    const data = await response.json();
+    setMessages([...newMessages, { role: 'assistant', content: data.reply }]);
   } catch (err) {
     if (err.name === 'AbortError') {
       setError('Generisanje je prekinuto.');
@@ -71,7 +71,12 @@ useEffect(() => {
         {messages.map((msg, index) => (
           <div key={index} style={{ marginBottom: '0.5rem' }}>
             <strong>{msg.role === 'user' ? 'Ti: ' : 'AI: '}</strong>
-            <ReactMarkdown>{msg.content}</ReactMarkdown>
+            <div className='chat-message'>
+            <ReactMarkdown>
+              {msg.content}
+            </ReactMarkdown>
+            </div>
+            
           </div>
         ))}
         <div ref={messagesEndRef} />
