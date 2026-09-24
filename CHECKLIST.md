@@ -37,9 +37,9 @@
 (implementirano: pronadjiKupca + istorijaKupovine, testirano end-to-end preko curl-a, radi višekoračni poziv)
 
 ## 2.2 Embeddings i semantic search
-- [ ] Šta su embeddings i čemu služe
-- [ ] Osnove similarity pretrage i vector baza
-- [ ] Semantic search nad proizvodima/dokumentima
+- [x] Šta su embeddings i čemu služe
+- [x] Osnove similarity pretrage i vector baza
+- [x] Semantic search nad proizvodima/dokumentima
 - [ ] Test sa najmanje nekoliko stotina zapisa
 
 ## 2.3 RAG
