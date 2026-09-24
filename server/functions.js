@@ -35,7 +35,7 @@ async function generisiEmbedding(tekst) {
 
 //END Function za generisanje embedinga
 
-//Embeding pretraga u bazi podataka
+//Embeding funkcija pretraga u bazi podataka
 
 async function pretraziProizvode(upit) {
     const upitEmbedding = await generisiEmbedding(upit);

@@ -40,7 +40,7 @@
 - [x] Šta su embeddings i čemu služe
 - [x] Osnove similarity pretrage i vector baza
 - [x] Semantic search nad proizvodima/dokumentima
-- [ ] Test sa najmanje nekoliko stotina zapisa
+- [x] Test sa najmanje nekoliko stotina zapisa
 
 ## 2.3 RAG
 - [ ] Povezivanje AI modela sa internom dokumentacijom

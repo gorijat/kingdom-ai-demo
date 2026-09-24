@@ -4,7 +4,7 @@ const cors = require('cors');
 
 const OpenAI = require('openai'); 
 
-const { pronadjiKupca, istorijaKupovine } = require('./functions');
+const { pronadjiKupca, istorijaKupovine, pretraziProizvode } = require('./functions');
 
 const openai = new OpenAI({ // Klient za OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
@@ -45,12 +45,30 @@ const tools = [
           required: ['kupacId']
         }
       }
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'pretraziProizvode',
+        description: 'Pretražuje katalog proizvoda po značenju upita (semantic search), ne po tačnom nazivu. Koristi kad korisnik opisuje šta mu treba, a ne zna tačan naziv proizvoda.',
+        parameters: {
+          type: 'object',
+          properties: {
+            upit: {
+              type: 'string',
+              description: 'Opis onoga što korisnik traži, prirodnim jezikom'
+            }
+          },
+          required: ['upit']
+        }
+      }
     }
   ];
   //END Definicija alata koje AI moze da koristi
   const dostupneFunkcije = { //ovim povezujemo nazive funkcija sa stvarnim implementacijama
     pronadjiKupca,
-    istorijaKupovine
+    istorijaKupovine,
+    pretraziProizvode
   };
 
 
@@ -72,7 +90,7 @@ app.post('/chat', async (req, res) => {
     const { messages } = req.body;
   
     let konverzacija = [
-        { role: 'system', content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, jasno i profesionalno.' },
+        { role: 'system', content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, isključivo latiničnim pismom, jasno i profesionalno.' },
       ...messages
     ];
   
@@ -103,7 +121,7 @@ app.post('/chat', async (req, res) => {
             if (!funkcija) {
               rezultat = { error: 'Nepoznata funkcija' };
             } else {
-              rezultat = funkcija(...Object.values(argumenti));
+              rezultat = await funkcija(...Object.values(argumenti));
             }
   
             konverzacija.push({
