@@ -4,7 +4,7 @@ const cors = require('cors');
 
 const OpenAI = require('openai'); 
 
-const { pronadjiKupca, istorijaKupovine, pretraziProizvode } = require('./functions');
+const { pronadjiKupca, istorijaKupovine, pretraziProizvode, pretraziDokumentaciju } = require('./functions');
 
 const openai = new OpenAI({ // Klient za OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
@@ -62,13 +62,31 @@ const tools = [
           required: ['upit']
         }
       }
-    }
+    },
+    {
+        type: 'function',
+        function: {
+          name: 'pretraziDokumentaciju',
+          description: 'Pretražuje internu dokumentaciju firme (FAQ, pravilnike o povraćaju, garanciji, dostavi) po značenju upita. Koristi kad korisnik pita o pravilima, politikama, ili proceduri firme.',
+          parameters: {
+            type: 'object',
+            properties: {
+              upit: {
+                type: 'string',
+                description: 'Pitanje korisnika o internim pravilima ili procedurama, prirodnim jezikom'
+              }
+            },
+            required: ['upit']
+          }
+        }
+      }
   ];
   //END Definicija alata koje AI moze da koristi
   const dostupneFunkcije = { //ovim povezujemo nazive funkcija sa stvarnim implementacijama
     pronadjiKupca,
     istorijaKupovine,
-    pretraziProizvode
+    pretraziProizvode,
+    pretraziDokumentaciju
   };
 
 

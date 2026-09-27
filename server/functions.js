@@ -1,4 +1,5 @@
 const db = require('./db');
+const faq = require('./dokumentacija');
 const OpenAI = require('openai');
 
 const openai = new OpenAI({
@@ -55,6 +56,26 @@ async function pretraziProizvode(upit) {
 
 //END Embeding pretraga u bazi podataka
 
+//FAQ pretraga dokumentacije
+
+async function pretraziDokumentaciju(upit) {
+    const upitEmbedding = await generisiEmbedding(upit);
+  
+    const saSkorom = [];
+  
+    for (const stavka of faq) {
+      const stavkaEmbedding = await generisiEmbedding(`${stavka.naslov} ${stavka.tekst}`);
+      const skor = cosinesSimilarity(upitEmbedding, stavkaEmbedding);
+      saSkorom.push({ ...stavka, skor });
+    }
+  
+    saSkorom.sort((a, b) => b.skor - a.skor);
+    return saSkorom.slice(0, 2);
+  }
+
+
+//END FAQ pretraga dokumentacije
+
 function pronadjiKupca(ime) {
   const stmt = db.prepare('SELECT * FROM kupci WHERE ime LIKE ?');
   return stmt.all(`%${ime}%`);
@@ -71,4 +92,4 @@ function istorijaKupovine(kupacId) {
   return stmt.all(kupacId);
 }
 
-module.exports = { pronadjiKupca, istorijaKupovine, pretraziProizvode };
+module.exports = { pronadjiKupca, istorijaKupovine, pretraziProizvode, pretraziDokumentaciju };

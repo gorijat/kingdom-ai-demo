@@ -43,10 +43,10 @@
 - [x] Test sa najmanje nekoliko stotina zapisa
 
 ## 2.3 RAG
-- [ ] Povezivanje AI modela sa internom dokumentacijom
-- [ ] Rad sa PDF/FAQ/podacima o proizvodima
-- [ ] Retrieval relevantnog sadržaja prije generisanja
-- [ ] Tok: React → NodeJS → pretraga → LLM → odgovor
+- [x] Povezivanje AI modela sa internom dokumentacijom
+- [x] Rad sa PDF/FAQ/podacima o proizvodima
+- [x] Retrieval relevantnog sadržaja prije generisanja
+- [x] Tok: React → NodeJS → pretraga → LLM → odgovor
 
 ## 2.4 AI Agents
 - [ ] Agent loop i višekoračni zadaci
