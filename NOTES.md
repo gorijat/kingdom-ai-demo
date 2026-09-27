@@ -129,3 +129,27 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
 - Stara /chat ruta je slala čist tekst (res.write), frontend je radio response.text()
 - Nova /chat ruta šalje JSON (res.json({reply: ...})), frontend MORA response.json()
   i data.reply, inače se prikazuje sirov JSON string na ekranu
+
+
+## Sedmica 3 — 2.2 Embeddings + 2.3 RAG KOMPLETNO
+
+### Šta je urađeno
+- cosinesSimilarity, generisiEmbedding - deljene pomoćne funkcije u functions.js
+- pretraziProizvode - semantic search nad proizvodima (2.2)
+- pretraziDokumentaciju - semantic search nad FAQ dokumentacijom (2.3, dokumentacija.js)
+- Obe funkcije dodate kao tool-ovi u /chat rutu (sada 4 dostupne funkcije ukupno)
+- await dodat u tool calling petlju (radi za sinhrone i asinhrone funkcije)
+
+### Ključni koncept
+- RAG = tool calling nad TEKSTOM umesto nad strukturiranim podacima
+- Isti embedding/similarity princip radi i za proizvode i za dokumentaciju
+- Model KORISTI pronađeni tekst kao kontekst, ne prepisuje ga doslovno -
+  ume da "izračuna" (npr. da li 5 dana < 14 dana rok) na osnovu njega
+
+### Trenutno stanje /chat rute (4 tool-a)
+1. pronadjiKupca - SQL pretraga kupaca
+2. istorijaKupovine - SQL JOIN, kupovine jednog kupca
+3. pretraziProizvode - semantic search nad proizvodima
+4. pretraziDokumentaciju - semantic search nad FAQ
+
+### Sledeće: 2.4 AI Agents (agent loop, planning)
