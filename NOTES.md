@@ -153,3 +153,31 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
 4. pretraziDokumentaciju - semantic search nad FAQ
 
 ### Sledeće: 2.4 AI Agents (agent loop, planning)
+
+
+## Sedmica 3-4 — 2.4 AI Agents (u toku)
+
+### Šta je urađeno
+- seed.js proširen: 20 proizvoda, 4 kupca (reset AUTOINCREMENT brojača preko sqlite_sequence)
+- Keš embeddinga (Map) u functions.js, da se isti tekst ne šalje OpenAI-ju dvaput
+- predloziProizvode(kupacId): profil kupca = embedding svega što je kupio, kandidati = samo
+  ono što NIJE kupio (SQL poddupit NOT IN), rangiranje po cosine similarity
+- istorijaKupovine dobila opcioni brojMeseci (filter po datumu, validacija tipa)
+- Ukupno 5 alata u /chat ruti
+
+### Ključni koncept
+- /chat while petlja JE agent loop: model sam bira redosled alata
+  (pronadjiKupca -> istorijaKupovine -> predloziProizvode) bez naših instrukcija
+- Pravilo "ne predlaži već kupljeno" je u SQL-u (zagarantovano), ne u promptu (verovatno)
+
+### Bagovi koje smo rešili
+- Dupli identifikatori u index.js (istorijaKupovine 2x u require, tools i mapi) -> server ne startuje
+- Model je izmislio valutu (EUR) -> pravilo u system poruci + "ne izmišljaj podatke"
+
+### Otvorene stavke (vratiti se pred kraj)
+- Kvalitet preporuka: opisi proizvoda su prekratki (naziv + kategorija), pa "liče na" često znači
+  "zamena" (npr. još jedan monitor), ne "dopuna". Popravka: kolona opis u tabeli proizvodi
+- Argumenti se prosleđuju po redosledu (Object.values), ne po imenu -> očvrsnuti tako da
+  funkcije primaju objekat
+- /chat više nije streaming; UI streaming odložen
+- Rate limits, retry, praćenje tokena (Sedmica 4)

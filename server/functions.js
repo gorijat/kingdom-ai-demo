@@ -26,12 +26,19 @@ function cosinesSimilarity(vektorA, vektorB) {
 
 //Function za generisanje embedinga
 
+const kesEmbeddinga = new Map(); //vise proizvoda i upita ce se ponavljati, pa da ne generisemo embedding svaki put, nego da ga kesiramo
+
 async function generisiEmbedding(tekst) {
+    if (kesEmbeddinga.has(tekst)) {
+        return kesEmbeddinga.get(tekst);
+    }
     const response = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: tekst,
     });
-    return response.data[0].embedding;
+    const embedding = response.data[0].embedding;
+    kesEmbeddinga.set(tekst, embedding);
+    return embedding;
   }
 
 //END Function za generisanje embedinga
@@ -81,15 +88,67 @@ function pronadjiKupca(ime) {
   return stmt.all(`%${ime}%`);
 }
 
-function istorijaKupovine(kupacId) {
-  const stmt = db.prepare(`
-    SELECT proizvodi.naziv, porudzbine.kolicina, porudzbine.datum
-    FROM porudzbine
-    JOIN proizvodi ON porudzbine.proizvod_id = proizvodi.id
-    WHERE porudzbine.kupac_id = ?
-    ORDER BY porudzbine.datum DESC
-  `);
-  return stmt.all(kupacId);
-}
+function istorijaKupovine(kupacId, brojMeseci) {
+    let upit = `
+      SELECT proizvodi.naziv, porudzbine.kolicina, porudzbine.datum
+      FROM porudzbine
+      JOIN proizvodi ON porudzbine.proizvod_id = proizvodi.id
+      WHERE porudzbine.kupac_id = ?
+    `;
+    const parametri = [kupacId];
+  
+    if (typeof brojMeseci === 'number' && brojMeseci > 0) {
+      const granica = new Date();
+      granica.setMonth(granica.getMonth() - brojMeseci);
+      upit += ' AND porudzbine.datum >= ?';
+      parametri.push(granica.toISOString().slice(0, 10));
+    }
+  
+    upit += ' ORDER BY porudzbine.datum DESC';
+    return db.prepare(upit).all(...parametri);
+  }
 
-module.exports = { pronadjiKupca, istorijaKupovine, pretraziProizvode, pretraziDokumentaciju };
+//Function za istoriju kupovine i predlog kupovine na osnovu istorije kupovine, koristi embeddinge i kosinusnu slicnost
+
+async function predloziProizvode(kupacId) {
+    const kupljeni = db.prepare(`
+      SELECT DISTINCT proizvodi.naziv, proizvodi.kategorija
+      FROM porudzbine
+      JOIN proizvodi ON porudzbine.proizvod_id = proizvodi.id
+      WHERE porudzbine.kupac_id = ?
+    `).all(kupacId);
+  
+    if (kupljeni.length === 0) {
+      return { poruka: 'Kupac nema istoriju kupovine, nema osnova za predloge.' };
+    }
+  
+    const profilTekst = kupljeni.map(p => `${p.naziv} ${p.kategorija}`).join(', ');
+    const profilEmbedding = await generisiEmbedding(profilTekst);
+  
+    const kandidati = db.prepare(`  
+      SELECT * FROM proizvodi
+      WHERE id NOT IN (
+        SELECT proizvod_id FROM porudzbine WHERE kupac_id = ?
+      )
+    `).all(kupacId);
+  
+    const saSkorom = [];
+  
+    for (const proizvod of kandidati) {
+      const proizvodEmbedding = await generisiEmbedding(`${proizvod.naziv} ${proizvod.kategorija}`);
+      const skor = cosinesSimilarity(profilEmbedding, proizvodEmbedding);
+      saSkorom.push({
+        naziv: proizvod.naziv,
+        kategorija: proizvod.kategorija,
+        cena: proizvod.cena,
+        skor
+      });
+    }
+  
+    saSkorom.sort((a, b) => b.skor - a.skor);
+    return saSkorom.slice(0, 5);
+  }
+
+//END istorija kupovine
+
+module.exports = { pronadjiKupca, istorijaKupovine, pretraziProizvode, pretraziDokumentaciju, predloziProizvode };
