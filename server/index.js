@@ -130,63 +130,75 @@ app.get('/', (req, res) => {
 
 // /chat ruta: tool calling petlja (agent loop)
 app.post('/chat', async (req, res) => {
-  const { messages } = req.body;
-
-  let konverzacija = [
-    {
-      role: 'system',
-      content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, isključivo latiničnim pismom, jasno i profesionalno. Cene u bazi nemaju definisanu valutu, zato ih navodi samo kao brojeve, bez oznake valute. Ne izmišljaj podatke koje nisi dobio iz alata.'
-    },
-    ...messages
-  ];
-
-  try {
-    let nastaviPetlju = true;
-
-    while (nastaviPetlju) {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: konverzacija,
-        tools: tools,
-      });
-
-      const poruka = response.choices[0].message;
-
-      if (poruka.tool_calls) {
-        konverzacija.push(poruka);
-
-        for (const poziv of poruka.tool_calls) {
-          const imeFunkcije = poziv.function.name;
-          const argumenti = JSON.parse(poziv.function.arguments);
-
-          console.log(`AI poziva funkciju: ${imeFunkcije}`, argumenti);
-
-          const funkcija = dostupneFunkcije[imeFunkcije];
-          let rezultat;
-
-          if (!funkcija) {
-            rezultat = { error: 'Nepoznata funkcija' };
-          } else {
-            rezultat = await funkcija(...Object.values(argumenti));
+    const { messages } = req.body;
+  
+    let konverzacija = [
+      {
+        role: 'system',
+        content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, isključivo latiničnim pismom, jasno i profesionalno. Cene u bazi nemaju definisanu valutu, zato ih navodi samo kao brojeve, bez oznake valute. Ne izmišljaj podatke koje nisi dobio iz alata.'
+      },
+      ...messages
+    ];
+  
+    const MAX_KORAKA = 8;
+    let korak = 0;
+  
+    try {
+      let nastaviPetlju = true;
+  
+      while (nastaviPetlju && korak < MAX_KORAKA) {
+        korak++;
+  
+        const response = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: konverzacija,
+          tools: tools,
+        });
+  
+        const poruka = response.choices[0].message;
+  
+        if (poruka.tool_calls) {
+          konverzacija.push(poruka);
+  
+          for (const poziv of poruka.tool_calls) {
+            const imeFunkcije = poziv.function.name;
+            const argumenti = JSON.parse(poziv.function.arguments);
+  
+            console.log(`[korak ${korak}] AI poziva funkciju: ${imeFunkcije}`, argumenti);
+  
+            const funkcija = dostupneFunkcije[imeFunkcije];
+            let rezultat;
+  
+            if (!funkcija) {
+              rezultat = { error: 'Nepoznata funkcija' };
+            } else {
+              rezultat = await funkcija(...Object.values(argumenti));
+            }
+  
+            konverzacija.push({
+              role: 'tool',
+              tool_call_id: poziv.id,
+              content: JSON.stringify(rezultat)
+            });
           }
-
-          konverzacija.push({
-            role: 'tool',
-            tool_call_id: poziv.id,
-            content: JSON.stringify(rezultat)
-          });
+        } else {
+          res.json({ reply: poruka.content });
+          nastaviPetlju = false;
         }
-      } else {
-        res.json({ reply: poruka.content });
-        nastaviPetlju = false;
       }
+  
+      if (nastaviPetlju) {
+        console.warn(`Petlja prekinuta: dostignut limit od ${MAX_KORAKA} koraka`);
+        res.json({
+          reply: 'Nisam uspeo da završim zadatak u dozvoljenom broju koraka. Pokušaj da pitanje podeliš na manje delove.'
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Greška prilikom komunikacije sa AI modelom' });
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Greška prilikom komunikacije sa AI modelom' });
-  }
-});
-// END /chat ruta
+  });
+  // END /chat ruta
 
 // Test ruta: Structured Output / JSON, tačno formatiranje odgovora radi upisa u bazu
 app.post('/extract', async (req, res) => {

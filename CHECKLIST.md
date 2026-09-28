@@ -49,9 +49,9 @@
 - [x] Tok: React → NodeJS → pretraga → LLM → odgovor
 
 ## 2.4 AI Agents
-- [ ] Agent loop i višekoračni zadaci
-- [ ] Tools, planning, kontrolisana memorija
-- [ ] Kombinovanje više funkcija u jedan proces
+- [x] Agent loop i višekoračni zadaci
+- [x] Tools, planning, kontrolisana memorija
+- [x] Kombinovanje više funkcija u jedan proces
 
 ## 2.5 Povezivanje sa postojećim sistemima
 - [x] REST API integracije — [TEORIJA]
