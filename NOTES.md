@@ -189,3 +189,34 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
   odgovora, vratio našu poruku), pa vratili na 8
 - Teorija: ReAct (reaktivno) vs plan-and-execute; kratkoročna memorija = niz konverzacija,
   dugoročna = baza kroz alate; tool pozivi ne žive između zahteva, samo user/assistant poruke
+
+
+## 2.5 Autentikacija i permisije — KOMPLETNO
+
+### Šta je urađeno
+- korisnici.js: mapa token -> {ime, uloga}, i mapa uloga -> dozvoljeni alati
+- proveriToken middleware: čita x-api-token header, 401 ako nema ili je nevažeći,
+  kači req.korisnik ako je token ispravan
+- /chat ruta: middleware primenjen (app.post('/chat', proveriToken, async...))
+- tools lista se filtrira po ulozi PRE slanja modelu (model fizički ne vidi
+  alate koje ne sme da koristi)
+- Dupla provera: čak i da model nekako zatraži nedozvoljen alat, provera
+  neposredno pre izvršavanja to ponovo hvata i loguje pokušaj
+
+### Ključni koncept
+- Autentikacija (ko si) i autorizacija (šta smeš) su odvojene provere
+- Permisije se proveravaju u KODU, nikad samo u promptu - prompt se može
+  zaobići (prompt injection), kod ne
+- Filtriranje tools liste je jače od "reci mu da ne sme" - model ne može
+  tražiti nešto što nikad nije video
+
+### Testirano
+- Bez tokena -> 401, model se ne poziva
+- Uloga podrska pita o kupcu -> nema pronadjiKupca u listi, model se snađe
+  sa pretraziDokumentaciju, iskreno kaže da nema informaciju
+- Uloga prodaja isto pitanje -> pun pristup, normalan odgovor
+
+### Napomena (van originalnog plana, ali bitno za pravu upotrebu)
+Token je za sada upisan u kod (korisnici.js) - u pravom sistemu bi ovo bila
+prava baza korisnika sa hešovanim lozinkama, verovatno JWT ili sličan sistem.
+Princip (middleware, filtriranje po ulozi) ostaje isti.
