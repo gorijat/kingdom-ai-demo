@@ -181,3 +181,11 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
   funkcije primaju objekat
 - /chat više nije streaming; UI streaming odložen
 - Rate limits, retry, praćenje tokena (Sedmica 4)
+
+
+### 2.4 završeno
+- Limit koraka u agent petlji (MAX_KORAKA = 8): štiti od beskonačne petlje i troška
+  API poziva. Testirano tako što smo privremeno spustili na 1 (agent nije stigao do
+  odgovora, vratio našu poruku), pa vratili na 8
+- Teorija: ReAct (reaktivno) vs plan-and-execute; kratkoročna memorija = niz konverzacija,
+  dugoročna = baza kroz alate; tool pozivi ne žive između zahteva, samo user/assistant poruke

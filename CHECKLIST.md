@@ -55,8 +55,8 @@
 
 ## 2.5 Povezivanje sa postojećim sistemima
 - [x] REST API integracije — [TEORIJA]
-- [ ] Baza podataka (SQLite u našem slučaju) — [KOD urađeno kroz 2.1, formalno se štiklira ovde]
-- [ ] Authentication, permissions, kontrola pristupa
+- [x] Baza podataka (SQLite u našem slučaju) — [KOD urađeno kroz 2.1, formalno se štiklira ovde]
+- [x] Authentication, permissions, kontrola pristupa
 - [x] AI nema direktan pristup bazi, samo kroz backend funkcije — [već primenjeno u praksi kroz tool calling]
 
 ## 2.6 MCP

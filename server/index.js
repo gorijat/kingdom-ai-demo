@@ -11,6 +11,7 @@ const {
   pretraziDokumentaciju,
   predloziProizvode
 } = require('./functions');
+const { korisnici, dozvoljeniAlati } = require('./korisnici');
 
 const openai = new OpenAI({ // Klijent za OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
@@ -124,13 +125,37 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+//middleware za autentifikaciju korisnika
+
+function proveriToken(req, res, next) {
+    const token = req.headers['x-api-token'];
+  
+    if (!token) {
+      return res.status(401).json({ error: 'Nedostaje token. Dodaj header x-api-token.' });
+    }
+  
+    const korisnik = korisnici[token];
+  
+    if (!korisnik) {
+      return res.status(401).json({ error: 'Nevažeći token.' });
+    }
+  
+    req.korisnik = korisnik;
+    next();
+  }
+
+//END middleware za autentifikaciju korisnika
+
 app.get('/', (req, res) => {
   res.json({ status: 'Kingdom AI backend radi' });
 });
 
 // /chat ruta: tool calling petlja (agent loop)
-app.post('/chat', async (req, res) => {
+app.post('/chat', proveriToken, async (req, res) => {
     const { messages } = req.body;
+
+    const dozvoljeno = dozvoljeniAlati[req.korisnik.uloga] || [];
+const filtriraniTools = tools.filter(t => dozvoljeno.includes(t.function.name));
   
     let konverzacija = [
       {
@@ -152,7 +177,7 @@ app.post('/chat', async (req, res) => {
         const response = await openai.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: konverzacija,
-          tools: tools,
+          tools: filtriraniTools
         });
   
         const poruka = response.choices[0].message;
@@ -167,13 +192,16 @@ app.post('/chat', async (req, res) => {
             console.log(`[korak ${korak}] AI poziva funkciju: ${imeFunkcije}`, argumenti);
   
             const funkcija = dostupneFunkcije[imeFunkcije];
-            let rezultat;
-  
-            if (!funkcija) {
-              rezultat = { error: 'Nepoznata funkcija' };
-            } else {
-              rezultat = await funkcija(...Object.values(argumenti));
-            }
+let rezultat;
+
+if (!funkcija) {
+  rezultat = { error: 'Nepoznata funkcija' };
+} else if (!dozvoljeno.includes(imeFunkcije)) {
+  rezultat = { error: 'Nemate dozvolu za ovu funkciju.' };
+  console.warn(`Odbijen pokušaj: ${req.korisnik.ime} (${req.korisnik.uloga}) je tražio ${imeFunkcije}`);
+} else {
+  rezultat = await funkcija(...Object.values(argumenti));
+}
   
             konverzacija.push({
               role: 'tool',
