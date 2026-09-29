@@ -60,6 +60,6 @@
 - [x] AI nema direktan pristup bazi, samo kroz backend funkcije — [već primenjeno u praksi kroz tool calling]
 
 ## 2.6 MCP
-- [ ] Osnovni koncept MCP-a
-- [ ] Kako se AI standardizovano povezuje sa alatima/servisima
+- [x] Osnovni koncept MCP-a
+- [x] Kako se AI standardizovano povezuje sa alatima/servisima
 - [ ] Jednostavan testni MCP server (opciono)
