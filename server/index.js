@@ -11,7 +11,8 @@ const {
   pretraziDokumentaciju,
   predloziProizvode
 } = require('./functions');
-const { korisnici, dozvoljeniAlati } = require('./korisnici');
+
+const { korisnici, dozvoljeniAlati, loginPodaci } = require('./korisnici');
 
 const openai = new OpenAI({ // Klijent za OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
@@ -149,6 +150,27 @@ function proveriToken(req, res, next) {
 app.get('/', (req, res) => {
   res.json({ status: 'Kingdom AI backend radi' });
 });
+
+//ruta vezano za login, vraća token koji se koristi za autentifikaciju
+
+app.post('/login', (req, res) => {
+  const { korisnickoIme, lozinka } = req.body;
+
+  const podaci = loginPodaci[korisnickoIme];
+
+  if (!podaci || podaci.lozinka !== lozinka) {
+    return res.status(401).json({ error: 'Pogrešno korisničko ime ili lozinka.' });
+  }
+
+  const korisnik = korisnici[podaci.token];
+
+  res.json({
+    token: podaci.token,
+    ime: korisnik.ime,
+    uloga: korisnik.uloga
+  });
+});
+//END login ruta
 
 // /chat ruta: tool calling petlja (agent loop)
 app.post('/chat', proveriToken, async (req, res) => {

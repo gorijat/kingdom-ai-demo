@@ -220,3 +220,27 @@ Model NIKAD ne priča direktno sa korisnikom - uvek ide kroz naš backend.
 Token je za sada upisan u kod (korisnici.js) - u pravom sistemu bi ovo bila
 prava baza korisnika sa hešovanim lozinkama, verovatno JWT ili sličan sistem.
 Princip (middleware, filtriranje po ulozi) ostaje isti.
+
+
+## Login sistem (van originalnog plana, nadogradnja 2.5)
+
+### Šta je urađeno
+- /login ruta: prima korisničko ime i lozinku, vraća token, ime i ulogu (loginPodaci u korisnici.js)
+- Ista poruka greške za pogrešno ime i pogrešnu lozinku (ne otkriva da li korisnik postoji)
+- React: uslovno renderovanje (login forma ili chat), token se šalje u x-api-token headeru
+- Sesija u sessionStorage (preživi refresh, briše se zatvaranjem taba)
+- Odjava čisti token, poruke, polja forme i greške (sledeći korisnik ne vidi tuđe podatke)
+
+### Bagovi koje smo rešili
+- Beli ekran posle prijave: stopGeneration je bila obrisana, pa onda pogrešno
+  napisana (stopGenaration). Dugme "Prekini" se iscrtava samo dok loading=true, pa je
+  React pao tek kad je poslato pitanje. Pravi uzrok se našao tek u browser konzoli (F12)
+- Lekcija: kad ekran nestane, prvo konzola, tek onda nagađanje
+
+### Otvorene stavke (bezbednost, pre prave upotrebe)
+- Lozinke su čist tekst u kodu: u pravom sistemu bcrypt heš i prava baza korisnika
+- Tokeni su fiksni stringovi: u pravom sistemu JWT sa rokom trajanja
+- sessionStorage čitljiv svakom skriptu na stranici: u pravom sistemu httpOnly kolačić
+- /login nema ograničenje broja pokušaja (brute force)
+- /extract ruta NEMA proveru tokena, a zove OpenAI (svako može da troši pozive).
+  Zaštititi sa proveriToken ili obrisati, jer je bila samo test ruta
