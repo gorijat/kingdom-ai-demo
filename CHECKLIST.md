@@ -13,7 +13,7 @@
 - [x] Streaming odgovora (backend) — napomena: /chat sada NIJE streaming zbog tool callinga, vraćamo se na ovo
 - [ ] Error handling, rate limits, retry logika — [TEORIJA urađena, KOD u Sedmici 4]
 - [x] Sigurno čuvanje API ključeva
-- [ ] Praćenje tokena, troškova, logovanje — [KOD u Sedmici 4]
+- [x] Praćenje tokena, troškova, logovanje — [KOD u Sedmici 4]
 
 ## 1.3 ReactJS + AI
 - [x] Jednostavan chat interfejs

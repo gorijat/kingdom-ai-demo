@@ -14,6 +14,8 @@ const {
 
 const { korisnici, dozvoljeniAlati, loginPodaci } = require('./korisnici');
 
+const { zabeleziPoziv, dajUkupno } = require('./pracenje');
+
 const openai = new OpenAI({ // Klijent za OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -174,84 +176,94 @@ app.post('/login', (req, res) => {
 
 // /chat ruta: tool calling petlja (agent loop)
 app.post('/chat', proveriToken, async (req, res) => {
-    const { messages } = req.body;
+  const { messages } = req.body;
 
-    const dozvoljeno = dozvoljeniAlati[req.korisnik.uloga] || [];
-const filtriraniTools = tools.filter(t => dozvoljeno.includes(t.function.name));
-  
-    let konverzacija = [
-      {
-        role: 'system',
-        content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, isključivo latiničnim pismom, jasno i profesionalno. Cene u bazi nemaju definisanu valutu, zato ih navodi samo kao brojeve, bez oznake valute. Ne izmišljaj podatke koje nisi dobio iz alata.'
-      },
-      ...messages
-    ];
-  
-    const MAX_KORAKA = 8;
-    let korak = 0;
-  
-    try {
-      let nastaviPetlju = true;
-  
-      while (nastaviPetlju && korak < MAX_KORAKA) {
-        korak++;
-  
-        const response = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
-          messages: konverzacija,
-          tools: filtriraniTools
-        });
-  
-        const poruka = response.choices[0].message;
-  
-        if (poruka.tool_calls) {
-          konverzacija.push(poruka);
-  
-          for (const poziv of poruka.tool_calls) {
-            const imeFunkcije = poziv.function.name;
-            const argumenti = JSON.parse(poziv.function.arguments);
-  
-            console.log(`[korak ${korak}] AI poziva funkciju: ${imeFunkcije}`, argumenti);
-  
-            const funkcija = dostupneFunkcije[imeFunkcije];
-let rezultat;
+  const dozvoljeno = dozvoljeniAlati[req.korisnik.uloga] || [];
+  const filtriraniTools = tools.filter(t => dozvoljeno.includes(t.function.name));
 
-if (!funkcija) {
-  rezultat = { error: 'Nepoznata funkcija' };
-} else if (!dozvoljeno.includes(imeFunkcije)) {
-  rezultat = { error: 'Nemate dozvolu za ovu funkciju.' };
-  console.warn(`Odbijen pokušaj: ${req.korisnik.ime} (${req.korisnik.uloga}) je tražio ${imeFunkcije}`);
-} else {
-  rezultat = await funkcija(...Object.values(argumenti));
-}
-  
-            konverzacija.push({
-              role: 'tool',
-              tool_call_id: poziv.id,
-              content: JSON.stringify(rezultat)
-            });
+  let konverzacija = [
+    {
+      role: 'system',
+      content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, isključivo latiničnim pismom, jasno i profesionalno. Cene u bazi nemaju definisanu valutu, zato ih navodi samo kao brojeve, bez oznake valute. Ne izmišljaj podatke koje nisi dobio iz alata.'
+    },
+    ...messages
+  ];
+
+  const MAX_KORAKA = 8;
+  let korak = 0;
+
+  try {
+    let nastaviPetlju = true;
+
+    while (nastaviPetlju && korak < MAX_KORAKA) {
+      korak++;
+
+      const pocetak = Date.now();
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: konverzacija,
+        tools: filtriraniTools,
+      });
+
+      const poruka = response.choices[0].message;
+
+      zabeleziPoziv({
+        tip: 'chat',
+        model: 'gpt-4o-mini',
+        korisnik: req.korisnik.ime,
+        usage: response.usage,
+        trajanjeMs: Date.now() - pocetak,
+        alati: poruka.tool_calls ? poruka.tool_calls.map(p => p.function.name) : []
+      });
+
+      if (poruka.tool_calls) {
+        konverzacija.push(poruka);
+
+        for (const poziv of poruka.tool_calls) {
+          const imeFunkcije = poziv.function.name;
+          const argumenti = JSON.parse(poziv.function.arguments);
+
+          console.log(`[korak ${korak}] AI poziva funkciju: ${imeFunkcije}`, argumenti);
+
+          const funkcija = dostupneFunkcije[imeFunkcije];
+          let rezultat;
+
+          if (!funkcija) {
+            rezultat = { error: 'Nepoznata funkcija' };
+          } else if (!dozvoljeno.includes(imeFunkcije)) {
+            rezultat = { error: 'Nemate dozvolu za ovu funkciju.' };
+            console.warn(`Odbijen pokušaj: ${req.korisnik.ime} (${req.korisnik.uloga}) je tražio ${imeFunkcije}`);
+          } else {
+            rezultat = await funkcija(...Object.values(argumenti));
           }
-        } else {
-          res.json({ reply: poruka.content });
-          nastaviPetlju = false;
+
+          konverzacija.push({
+            role: 'tool',
+            tool_call_id: poziv.id,
+            content: JSON.stringify(rezultat)
+          });
         }
+      } else {
+        res.json({ reply: poruka.content });
+        nastaviPetlju = false;
       }
-  
-      if (nastaviPetlju) {
-        console.warn(`Petlja prekinuta: dostignut limit od ${MAX_KORAKA} koraka`);
-        res.json({
-          reply: 'Nisam uspeo da završim zadatak u dozvoljenom broju koraka. Pokušaj da pitanje podeliš na manje delove.'
-        });
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Greška prilikom komunikacije sa AI modelom' });
     }
-  });
+
+    if (nastaviPetlju) {
+      console.warn(`Petlja prekinuta: dostignut limit od ${MAX_KORAKA} koraka`);
+      res.json({
+        reply: 'Nisam uspeo da završim zadatak u dozvoljenom broju koraka. Pokušaj da pitanje podeliš na manje delove.'
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Greška prilikom komunikacije sa AI modelom' });
+  }
+});
   // END /chat ruta
 
 // Test ruta: Structured Output / JSON, tačno formatiranje odgovora radi upisa u bazu
-app.post('/extract', async (req, res) => {
+app.post('/extract', proveriToken, async (req, res) => {
   const { text } = req.body;
 
   try {
@@ -291,6 +303,10 @@ app.post('/extract', async (req, res) => {
   }
 });
 // END /extract ruta
+
+app.get('/potrosnja', proveriToken, (req, res) => {
+  res.json(dajUkupno());
+});
 
 app.listen(PORT, () => {
   console.log(`Server pokrenut na portu ${PORT}`);

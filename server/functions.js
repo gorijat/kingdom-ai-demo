@@ -1,6 +1,7 @@
 const db = require('./db');
 const faq = require('./dokumentacija');
 const OpenAI = require('openai');
+const { zabeleziPoziv } = require('./pracenje');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -32,10 +33,20 @@ async function generisiEmbedding(tekst) {
     if (kesEmbeddinga.has(tekst)) {
         return kesEmbeddinga.get(tekst);
     }
+    const pocetak = Date.now();
     const response = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: tekst,
     });
+
+    zabeleziPoziv({
+      tip: 'embedding',
+      model: 'text-embedding-3-small',
+      korisnik: null,
+      usage: response.usage,
+      trajanjeMs: Date.now() - pocetak,
+    });
+    
     const embedding = response.data[0].embedding;
     kesEmbeddinga.set(tekst, embedding);
     return embedding;

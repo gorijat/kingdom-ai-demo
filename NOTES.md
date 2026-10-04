@@ -244,3 +244,14 @@ Princip (middleware, filtriranje po ulozi) ostaje isti.
 - /login nema ograničenje broja pokušaja (brute force)
 - /extract ruta NEMA proveru tokena, a zove OpenAI (svako može da troši pozive).
   Zaštititi sa proveriToken ili obrisati, jer je bila samo test ruta
+
+
+### Praćenje tokena i logovanje (1.2) — završeno
+- pracenje.js: zabeleziPoziv() upisuje JSON red u ai-pozivi.log i sabira ukupno u memoriji
+- Loguju se samo brojevi i imena alata, ne tekst poruka (u porukama su podaci o kupcima)
+- /potrosnja ruta (iza tokena) vraća ukupne pozive, tokene i trošak
+- Zapažanje: ulazni tokeni rastu iz koraka u korak jer svaki poziv nosi celu istoriju
+  i definicije alata (prvi poziv ~540 tokena za jednu rečenicu)
+- Zapažanje: trosakUSD po redu embeddinga je 0 zbog zaokruživanja, ukupan zbir je tačan
+- Cene u CENE mapi su upisane ručno: proveriti na openai.com/api/pricing
+- Brojač ukupno živi u memoriji (nestaje pri restartu), log fajl je trajan
