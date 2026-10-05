@@ -18,7 +18,7 @@
 ## 1.3 ReactJS + AI
 - [x] Jednostavan chat interfejs
 - [x] Istorija razgovora i upravljanje stanjem
-- [ ] Streaming teksta u realnom vremenu (UI) — odloženo, vraćamo se posle tool callinga
+- [x] Streaming teksta u realnom vremenu (UI) — odloženo, vraćamo se posle tool callinga
 - [x] Loading/error states i prekid generisanja
 - [x] Markdown i prikaz koda
 - [x] Komunikacija React ↔ NodeJS

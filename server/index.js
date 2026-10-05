@@ -197,7 +197,11 @@ app.post('/login', loginLimiter, (req, res) => {
 });
 //END login ruta
 
-// /chat ruta: tool calling petlja (agent loop)
+// Šalje jedan red (jedan JSON objekat) ka browseru
+function posaljiRed(res, objekat) {
+  res.write(JSON.stringify(objekat) + '\n');
+}
+
 app.post('/chat', proveriToken, chatLimiter, async (req, res) => {
   const { messages } = req.body;
 
@@ -212,48 +216,107 @@ app.post('/chat', proveriToken, chatLimiter, async (req, res) => {
     ...messages
   ];
 
+  // Od ovog trenutka šaljemo stream, pa se status (200) ne može više menjati
+  res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.flushHeaders();
+
+  // Ako browser prekine vezu (dugme "Prekini"), petlja staje
+  let klijentOdustao = false;
+  res.on('close', () => {
+    if (!res.writableEnded) klijentOdustao = true;
+  });
+
   const MAX_KORAKA = 8;
   let korak = 0;
+  let zavrseno = false;
 
   try {
-    let nastaviPetlju = true;
-
-    while (nastaviPetlju && korak < MAX_KORAKA) {
+    while (!zavrseno && korak < MAX_KORAKA && !klijentOdustao) {
       korak++;
-
       const pocetak = Date.now();
-      const response = await pozoviSaPonavljanjem(
+
+      // Retry važi samo za OTVARANJE streama, dok korisnik još nije dobio ništa
+      const stream = await pozoviSaPonavljanjem(
         () => openai.chat.completions.create({
           model: 'gpt-4o-mini',
           messages: konverzacija,
           tools: filtriraniTools,
+          stream: true,
+          stream_options: { include_usage: true },
         }),
         'chat'
       );
-      const poruka = response.choices[0].message;
+
+      let tekst = '';
+      const skupljeniPozivi = [];
+      let usage = null;
+
+      for await (const chunk of stream) {
+        if (klijentOdustao) break;
+
+        if (chunk.usage) usage = chunk.usage;
+
+        const delta = chunk.choices[0] && chunk.choices[0].delta;
+        if (!delta) continue; // poslednji deo sa usage podacima nema choices
+
+        // Tekst šaljemo korisniku odmah
+        if (delta.content) {
+          tekst += delta.content;
+          posaljiRed(res, { tip: 'tekst', sadrzaj: delta.content });
+        }
+
+        // Pozive alata samo skupljamo, po rednom broju (index)
+        if (delta.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const i = tc.index;
+            if (!skupljeniPozivi[i]) {
+              skupljeniPozivi[i] = { id: '', type: 'function', function: { name: '', arguments: '' } };
+            }
+            if (tc.id) skupljeniPozivi[i].id = tc.id;
+            if (tc.function && tc.function.name) skupljeniPozivi[i].function.name += tc.function.name;
+            if (tc.function && tc.function.arguments) skupljeniPozivi[i].function.arguments += tc.function.arguments;
+          }
+        }
+      }
+
+      if (klijentOdustao) {
+        console.log(`[korak ${korak}] Klijent je prekinuo vezu, zaustavljam petlju`);
+        return;
+      }
+
+      const pozivi = skupljeniPozivi.filter(Boolean);
 
       zabeleziPoziv({
         tip: 'chat',
         model: 'gpt-4o-mini',
         korisnik: req.korisnik.ime,
-        usage: response.usage,
+        usage: usage,
         trajanjeMs: Date.now() - pocetak,
-        alati: poruka.tool_calls ? poruka.tool_calls.map(p => p.function.name) : []
+        alati: pozivi.map(p => p.function.name)
       });
 
-      if (poruka.tool_calls) {
-        konverzacija.push(poruka);
+      if (pozivi.length > 0) {
+        konverzacija.push({ role: 'assistant', content: tekst || null, tool_calls: pozivi });
 
-        for (const poziv of poruka.tool_calls) {
+        for (const poziv of pozivi) {
           const imeFunkcije = poziv.function.name;
-          const argumenti = JSON.parse(poziv.function.arguments);
+          let rezultat;
+
+          let argumenti;
+          try {
+            argumenti = JSON.parse(poziv.function.arguments);
+          } catch (e) {
+            argumenti = null;
+          }
 
           console.log(`[korak ${korak}] AI poziva funkciju: ${imeFunkcije}`, argumenti);
 
           const funkcija = dostupneFunkcije[imeFunkcije];
-          let rezultat;
 
-          if (!funkcija) {
+          if (argumenti === null) {
+            rezultat = { error: 'Neispravni argumenti funkcije.' };
+          } else if (!funkcija) {
             rezultat = { error: 'Nepoznata funkcija' };
           } else if (!dozvoljeno.includes(imeFunkcije)) {
             rezultat = { error: 'Nemate dozvolu za ovu funkciju.' };
@@ -269,23 +332,29 @@ app.post('/chat', proveriToken, chatLimiter, async (req, res) => {
           });
         }
       } else {
-        res.json({ reply: poruka.content });
-        nastaviPetlju = false;
+        zavrseno = true;
       }
     }
 
-    if (nastaviPetlju) {
+    if (!zavrseno) {
       console.warn(`Petlja prekinuta: dostignut limit od ${MAX_KORAKA} koraka`);
-      res.json({
-        reply: 'Nisam uspeo da završim zadatak u dozvoljenom broju koraka. Pokušaj da pitanje podeliš na manje delove.'
+      posaljiRed(res, {
+        tip: 'tekst',
+        sadrzaj: 'Nisam uspeo da završim zadatak u dozvoljenom broju koraka. Pokušaj da pitanje podeliš na manje delove.'
       });
     }
+
+    posaljiRed(res, { tip: 'kraj' });
+    res.end();
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Greška prilikom komunikacije sa AI modelom' });
+    if (!res.writableEnded && !res.destroyed) {
+      posaljiRed(res, { tip: 'greska', poruka: 'Greška prilikom komunikacije sa AI modelom' });
+      res.end();
+    }
   }
 });
-  // END /chat ruta
+// END /chat ruta
 
 // Test ruta: Structured Output / JSON, tačno formatiranje odgovora radi upisa u bazu
 app.post('/extract', proveriToken, async (req, res) => {

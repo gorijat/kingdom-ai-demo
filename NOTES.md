@@ -268,3 +268,22 @@ Princip (middleware, filtriranje po ulozi) ostaje isti.
 - Testirano: lažne greške (429, 401, 503) i limit na /login. Kroz pravi OpenAI poziv retry
   nije izazvan (nije bilo grešaka)
 - Razlika smerova: retry = mi zovemo OpenAI i on odbije; rate limit = klijenti zovu nas
+
+## Streaming (NDJSON)
+
+- Backend šalje odgovor red po red, svaki red je jedan JSON događaj:
+  `{"tip":"tekst","sadrzaj":"..."}`, `{"tip":"greska","poruka":"..."}`, `{"tip":"kraj"}`.
+- Zaglavlje je `application/x-ndjson`, a `res.flushHeaders()` šalje status odmah.
+  Posle toga se status više ne može promeniti, zato se greške usred toka šalju kao `{"tip":"greska"}`.
+  401 i 429 stižu pre toka kao obične JSON greške.
+- `stream: true` + `stream_options: { include_usage: true }`: poslednji deo sadrži `usage`,
+  pa se tokeni i dalje beleže u `pracenje.js`.
+- Pozivi alata stižu u fragmentima (`delta.tool_calls`) i skupljaju se po `index`,
+  a funkcija se izvršava tek kad je poziv kompletan.
+- Retry (`pozoviSaPonavljanjem`) važi samo do prvog primljenog dela. Posle toga ponavljanje
+  bi duplo ispisalo tekst.
+- Prekid: `res.on('close')` postavlja `klijentOdustao`, petlja staje i server ne troši
+  nove tokene. U logu: "Klijent je prekinuo vezu, zaustavljam petlju".
+- Frontend: `response.body.getReader()`, `TextDecoder` sa `{ stream: true }` (da ž, č, ć, š, đ
+  ne pucaju na granici dela), bafer `ostatak` za nedovršen red, `AbortController` za "Prekini".
+- Odjava usred odgovora prekida tok.
