@@ -75,7 +75,7 @@ const tools = [
         properties: {
           upit: {
             type: 'string',
-            description: 'Opis onoga što korisnik traži, prirodnim jezikom'
+            description: 'Pun opis proizvoda koji se traži: navedi vrstu proizvoda i njegovu namenu, npr. "IP kamera za video nadzor dvorišta", a ne samo "nadzor dvorišta". Ne koristi pojedinačne reči.'
           }
         },
         required: ['upit']
@@ -211,7 +211,7 @@ app.post('/chat', proveriToken, chatLimiter, async (req, res) => {
   let konverzacija = [
     {
       role: 'system',
-      content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, isključivo latiničnim pismom, jasno i profesionalno. Cene u bazi nemaju definisanu valutu, zato ih navodi samo kao brojeve, bez oznake valute. Ne izmišljaj podatke koje nisi dobio iz alata.'
+      content: 'Ti si Kingdom AI Assistant, pomažeš zaposlenima sa poslovnim upitima. Odgovaraj na gramatički ispravnom srpskom jeziku, isključivo latiničnim pismom, jasno i profesionalno. Cene u bazi nemaju definisanu valutu, zato ih navodi samo kao brojeve, bez oznake valute. Ne izmišljaj podatke koje nisi dobio iz alata.  Opise proizvoda prenosi tačno onako kako su dobijeni iz alata, ne dopisuj im nove osobine ili namene. Od rezultata pretrage preporuči samo one proizvode koji stvarno odgovaraju upitu, a ostale izostavi.'
     },
     ...messages
   ];
