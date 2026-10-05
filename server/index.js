@@ -16,8 +16,13 @@ const { korisnici, dozvoljeniAlati, loginPodaci } = require('./korisnici');
 
 const { zabeleziPoziv, dajUkupno } = require('./pracenje');
 
+const { pozoviSaPonavljanjem } = require('./ponavljanje');
+
+const rateLimit = require('express-rate-limit');
+
 const openai = new OpenAI({ // Klijent za OpenAI API
   apiKey: process.env.OPENAI_API_KEY,
+  maxRetries: 0, // ponavljanje radi naš omotač, ne ugrađeni mehanizam
 });
 
 // Definicija alata koje AI može da koristi
@@ -128,6 +133,24 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,      // prozor od 15 minuta
+  limit: 5,                      // najviše 5 neuspelih pokušaja
+  skipSuccessfulRequests: true,  // uspešne prijave se ne računaju
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Previše neuspelih pokušaja prijave. Pokušaj ponovo za 15 minuta.' }
+});
+
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,           // prozor od 1 minuta
+  limit: 10,                     // najviše 10 pitanja u minuti po korisniku
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.korisnik.ime,
+  message: { error: 'Previše zahteva. Sačekaj minut pa pokušaj ponovo.' }
+});
+
 //middleware za autentifikaciju korisnika
 
 function proveriToken(req, res, next) {
@@ -155,7 +178,7 @@ app.get('/', (req, res) => {
 
 //ruta vezano za login, vraća token koji se koristi za autentifikaciju
 
-app.post('/login', (req, res) => {
+app.post('/login', loginLimiter, (req, res) => {
   const { korisnickoIme, lozinka } = req.body;
 
   const podaci = loginPodaci[korisnickoIme];
@@ -175,7 +198,7 @@ app.post('/login', (req, res) => {
 //END login ruta
 
 // /chat ruta: tool calling petlja (agent loop)
-app.post('/chat', proveriToken, async (req, res) => {
+app.post('/chat', proveriToken, chatLimiter, async (req, res) => {
   const { messages } = req.body;
 
   const dozvoljeno = dozvoljeniAlati[req.korisnik.uloga] || [];
@@ -199,12 +222,14 @@ app.post('/chat', proveriToken, async (req, res) => {
       korak++;
 
       const pocetak = Date.now();
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: konverzacija,
-        tools: filtriraniTools,
-      });
-
+      const response = await pozoviSaPonavljanjem(
+        () => openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: konverzacija,
+          tools: filtriraniTools,
+        }),
+        'chat'
+      );
       const poruka = response.choices[0].message;
 
       zabeleziPoziv({

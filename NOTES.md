@@ -255,3 +255,16 @@ Princip (middleware, filtriranje po ulozi) ostaje isti.
 - Zapažanje: trosakUSD po redu embeddinga je 0 zbog zaokruživanja, ukupan zbir je tačan
 - Cene u CENE mapi su upisane ručno: proveriti na openai.com/api/pricing
 - Brojač ukupno živi u memoriji (nestaje pri restartu), log fajl je trajan
+
+
+### Retry i rate limits (1.2) — završeno
+- ponavljanje.js: pozoviSaPonavljanjem(poziv) — ponavlja samo 408/409/429/5xx i prekide veze,
+  ne 400/401; exponential backoff (1s, 2s, 4s) + jitter do 30%, poštuje Retry-After header,
+  max 4 pokušaja pa baca grešku
+- maxRetries: 0 na OpenAI klijentima (functions.js i index.js), da se ugrađeni retry i naš ne množe
+- express-rate-limit: /login 5 neuspelih pokušaja u 15 min po IP (uspešne se ne računaju),
+  /chat 10 zahteva u minuti po korisniku (chatLimiter ide POSLE proveriToken jer koristi req.korisnik)
+- Brojači žive u memoriji (brišu se restartom); sa više servera treba zajednička baza
+- Testirano: lažne greške (429, 401, 503) i limit na /login. Kroz pravi OpenAI poziv retry
+  nije izazvan (nije bilo grešaka)
+- Razlika smerova: retry = mi zovemo OpenAI i on odbije; rate limit = klijenti zovu nas

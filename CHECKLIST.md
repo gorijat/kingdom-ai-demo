@@ -11,7 +11,7 @@
 ## 1.2 AI API integracija kroz NodeJS
 - [x] Slanje zahteva AI modelu
 - [x] Streaming odgovora (backend) — napomena: /chat sada NIJE streaming zbog tool callinga, vraćamo se na ovo
-- [ ] Error handling, rate limits, retry logika — [TEORIJA urađena, KOD u Sedmici 4]
+- [x] Error handling, rate limits, retry logika — [TEORIJA urađena, KOD u Sedmici 4]
 - [x] Sigurno čuvanje API ključeva
 - [x] Praćenje tokena, troškova, logovanje — [KOD u Sedmici 4]
 

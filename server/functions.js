@@ -2,9 +2,11 @@ const db = require('./db');
 const faq = require('./dokumentacija');
 const OpenAI = require('openai');
 const { zabeleziPoziv } = require('./pracenje');
+const { pozoviSaPonavljanjem } = require('./ponavljanje');
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
+  maxRetries: 0, // ponavljanje radi naš omotač, ne ugrađeni mehanizam
 });
 
 //Cosine similarity function kosinusna slicnost koja vraca vrednost slicnosti izmedju dva vektora od -1 do 1, gde 1 znaci da su vektori identicni, 0 znaci da su ortogonalni (nema slicnosti), a -1 znaci da su potpuno suprotni.
@@ -34,10 +36,13 @@ async function generisiEmbedding(tekst) {
         return kesEmbeddinga.get(tekst);
     }
     const pocetak = Date.now();
-    const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: tekst,
-    });
+    const response = await pozoviSaPonavljanjem(
+      () => openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: tekst,
+      }),
+      'embedding'
+    );
 
     zabeleziPoziv({
       tip: 'embedding',
@@ -46,7 +51,7 @@ async function generisiEmbedding(tekst) {
       usage: response.usage,
       trajanjeMs: Date.now() - pocetak,
     });
-    
+
     const embedding = response.data[0].embedding;
     kesEmbeddinga.set(tekst, embedding);
     return embedding;
