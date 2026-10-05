@@ -59,25 +59,63 @@ async function generisiEmbedding(tekst) {
 
 //END Function za generisanje embedinga
 
-//Embeding funkcija pretraga u bazi podataka
+//Pomoćne funkcije za rad sa sačuvanim vektorima proizvoda
+
+// Čita proizvode iz baze zajedno sa vektorima koje je upisala skripta generisi-embeddinge.js
+function ucitajProizvodeSaVektorima() {
+  const redovi = db.prepare('SELECT * FROM proizvodi').all();
+  const bezEmbeddinga = redovi.filter(r => !r.embedding).length;
+
+  if (bezEmbeddinga > 0) {
+    throw new Error(
+      `${bezEmbeddinga} proizvoda nema embedding. Pokreni: node generisi-embeddinge.js`
+    );
+  }
+
+  return redovi.map(r => ({ ...r, embedding: JSON.parse(r.embedding) }));
+}
+
+// Prosek više vektora: "sredina" svega što je kupac kupio
+function prosecanVektor(vektori) {
+  const zbir = new Array(vektori[0].length).fill(0);
+  for (const vektor of vektori) {
+    for (let i = 0; i < vektor.length; i++) {
+      zbir[i] += vektor[i];
+    }
+  }
+  return zbir.map(x => x / vektori.length);
+}
+
+// Modelu vraćamo samo tekstualna polja, nikad sam vektor (1536 brojeva bi uzalud trošili tokene)
+function bezVektora(proizvod, skor) {
+  return {
+    naziv: proizvod.naziv,
+    kategorija: proizvod.kategorija,
+    cena: proizvod.cena,
+    opis: proizvod.opis,
+    skor: Number(skor.toFixed(4))
+  };
+}
+
+//END Pomoćne funkcije
+
+//Embeding funkcija pretraga u bazi podataka (koristi unapred sačuvane vektore)
 
 async function pretraziProizvode(upit) {
-    const upitEmbedding = await generisiEmbedding(upit);
-    const sviProizvodi = db.prepare('SELECT * FROM proizvodi').all();
-  
-    const saSkorom = [];
-  
-    for (const proizvod of sviProizvodi) { //generisanje embedinga za svaki proizvod u bazi podataka, da imamo 100+ proizvoda ovo bi izracunali unapred
-      const proizvodEmbedding = await generisiEmbedding(`${proizvod.naziv} ${proizvod.kategorija}`);
-      const skor = cosinesSimilarity(upitEmbedding, proizvodEmbedding);
-      saSkorom.push({ ...proizvod, skor });
-    }
-  
+    const upitEmbedding = await generisiEmbedding(upit); // jedini poziv ka OpenAI-ju
+    const sviProizvodi = ucitajProizvodeSaVektorima();
+
+    const saSkorom = sviProizvodi.map(proizvod => ({
+      proizvod,
+      skor: cosinesSimilarity(upitEmbedding, proizvod.embedding)
+    }));
+
     saSkorom.sort((a, b) => b.skor - a.skor);
-    return saSkorom.slice(0, 3);
+    return saSkorom.slice(0, 5).map(s => bezVektora(s.proizvod, s.skor));
   }
 
 //END Embeding pretraga u bazi podataka
+
 
 //FAQ pretraga dokumentacije
 
@@ -124,47 +162,36 @@ function istorijaKupovine(kupacId, brojMeseci) {
     return db.prepare(upit).all(...parametri);
   }
 
-//Function za istoriju kupovine i predlog kupovine na osnovu istorije kupovine, koristi embeddinge i kosinusnu slicnost
+//Function za predlog kupovine na osnovu istorije kupovine, koristi sačuvane embeddinge i kosinusnu slicnost
 
 async function predloziProizvode(kupacId) {
-    const kupljeni = db.prepare(`
-      SELECT DISTINCT proizvodi.naziv, proizvodi.kategorija
-      FROM porudzbine
-      JOIN proizvodi ON porudzbine.proizvod_id = proizvodi.id
-      WHERE porudzbine.kupac_id = ?
-    `).all(kupacId);
-  
-    if (kupljeni.length === 0) {
+    const sviProizvodi = ucitajProizvodeSaVektorima();
+
+    const kupljeniIds = db.prepare(
+      'SELECT DISTINCT proizvod_id FROM porudzbine WHERE kupac_id = ?'
+    ).all(kupacId).map(r => r.proizvod_id);
+
+    if (kupljeniIds.length === 0) {
       return { poruka: 'Kupac nema istoriju kupovine, nema osnova za predloge.' };
     }
-  
-    const profilTekst = kupljeni.map(p => `${p.naziv} ${p.kategorija}`).join(', ');
-    const profilEmbedding = await generisiEmbedding(profilTekst);
-  
-    const kandidati = db.prepare(`  
-      SELECT * FROM proizvodi
-      WHERE id NOT IN (
-        SELECT proizvod_id FROM porudzbine WHERE kupac_id = ?
-      )
-    `).all(kupacId);
-  
-    const saSkorom = [];
-  
-    for (const proizvod of kandidati) {
-      const proizvodEmbedding = await generisiEmbedding(`${proizvod.naziv} ${proizvod.kategorija}`);
-      const skor = cosinesSimilarity(profilEmbedding, proizvodEmbedding);
-      saSkorom.push({
-        naziv: proizvod.naziv,
-        kategorija: proizvod.kategorija,
-        cena: proizvod.cena,
-        skor
-      });
-    }
-  
+
+    // Profil kupca = prosek vektora svega što je kupio (bez ijednog poziva ka OpenAI-ju)
+    const kupljeni = sviProizvodi.filter(p => kupljeniIds.includes(p.id));
+    const profil = prosecanVektor(kupljeni.map(p => p.embedding));
+
+    // Kandidati: sve što kupac još nije kupio
+    const kandidati = sviProizvodi.filter(p => !kupljeniIds.includes(p.id));
+
+    const saSkorom = kandidati.map(proizvod => ({
+      proizvod,
+      skor: cosinesSimilarity(profil, proizvod.embedding)
+    }));
+
     saSkorom.sort((a, b) => b.skor - a.skor);
-    return saSkorom.slice(0, 5);
+    return saSkorom.slice(0, 5).map(s => bezVektora(s.proizvod, s.skor));
   }
 
-//END istorija kupovine
+//END predlog kupovine
+
 
 module.exports = { pronadjiKupca, istorijaKupovine, pretraziProizvode, pretraziDokumentaciju, predloziProizvode };

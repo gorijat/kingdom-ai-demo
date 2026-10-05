@@ -14,7 +14,8 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     naziv TEXT NOT NULL,
     kategorija TEXT,
-    cena REAL
+    cena REAL,
+    opis TEXT
   );
 
   CREATE TABLE IF NOT EXISTS porudzbine (

@@ -287,3 +287,12 @@ Princip (middleware, filtriranje po ulozi) ostaje isti.
 - Frontend: `response.body.getReader()`, `TextDecoder` sa `{ stream: true }` (da ž, č, ć, š, đ
   ne pucaju na granici dela), bafer `ostatak` za nedovršen red, `AbortController` za "Prekini".
 - Odjava usred odgovora prekida tok.
+
+## Veliki katalog i sačuvani embeddinzi
+
+- Katalog: 239 proizvoda u `server/katalog.js` (naziv, kategorija, cena, opis). Prvih 20 su na istim indeksima kao ranije, jer seed vezuje porudžbine po indeksu.
+- `generisi-embeddinge.js` jednom računa vektore (grupe po 100, tekst = naziv + kategorija + opis) i čuva ih kao JSON u koloni `embedding`. Posle svakog `node seed.js` mora ponovo da se pokrene.
+- `pretraziProizvode` radi jedan poziv ka OpenAI-ju (embedding upita), a vektore proizvoda čita iz baze.
+- `predloziProizvode` ne zove OpenAI uopšte: profil kupca je prosek vektora kupljenih proizvoda.
+- Modelu se nikad ne vraćaju sirovi vektori, samo naziv, kategorija, cena, opis i skor.
+- Poznata ograničenja: profil kao jedan prosečan vektor daje "slične" proizvode (npr. još SSD-ova kupcu koji ima SSD), a ne dopune. Retki lažni pogoci (npr. "zaštita" → zaštitno staklo). Za desetine hiljada zapisa potrebna je prava vektorska baza.
