@@ -101,7 +101,7 @@ function bezVektora(proizvod, skor) {
 
 //Embeding funkcija pretraga u bazi podataka (koristi unapred sačuvane vektore)
 
-async function pretraziProizvode(upit) {
+async function pretraziProizvode({upit}) {
     const upitEmbedding = await generisiEmbedding(upit); // jedini poziv ka OpenAI-ju
     const sviProizvodi = ucitajProizvodeSaVektorima();
 
@@ -119,7 +119,7 @@ async function pretraziProizvode(upit) {
 
 //FAQ pretraga dokumentacije
 
-async function pretraziDokumentaciju(upit) {
+async function pretraziDokumentaciju({ upit }) {
     const upitEmbedding = await generisiEmbedding(upit);
   
     const saSkorom = [];
@@ -137,12 +137,12 @@ async function pretraziDokumentaciju(upit) {
 
 //END FAQ pretraga dokumentacije
 
-function pronadjiKupca(ime) {
+function pronadjiKupca({ ime }) {
   const stmt = db.prepare('SELECT * FROM kupci WHERE ime LIKE ?');
   return stmt.all(`%${ime}%`);
 }
 
-function istorijaKupovine(kupacId, brojMeseci) {
+function istorijaKupovine({ kupacId, brojMeseci }) {
     let upit = `
       SELECT proizvodi.naziv, porudzbine.kolicina, porudzbine.datum
       FROM porudzbine
@@ -164,7 +164,7 @@ function istorijaKupovine(kupacId, brojMeseci) {
 
 //Function za predlog kupovine na osnovu istorije kupovine, koristi sačuvane embeddinge i kosinusnu slicnost
 
-async function predloziProizvode(kupacId) {
+async function predloziProizvode({ kupacId }) {
     const sviProizvodi = ucitajProizvodeSaVektorima();
 
     const kupljeniIds = db.prepare(

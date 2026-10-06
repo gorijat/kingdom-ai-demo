@@ -322,7 +322,7 @@ app.post('/chat', proveriToken, chatLimiter, async (req, res) => {
             rezultat = { error: 'Nemate dozvolu za ovu funkciju.' };
             console.warn(`Odbijen pokušaj: ${req.korisnik.ime} (${req.korisnik.uloga}) je tražio ${imeFunkcije}`);
           } else {
-            rezultat = await funkcija(...Object.values(argumenti));
+            rezultat = await funkcija(argumenti);
           }
 
           konverzacija.push({

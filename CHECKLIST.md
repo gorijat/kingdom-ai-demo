@@ -62,4 +62,4 @@
 ## 2.6 MCP
 - [x] Osnovni koncept MCP-a
 - [x] Kako se AI standardizovano povezuje sa alatima/servisima
-- [ ] Jednostavan testni MCP server (opciono)
+- [x] Jednostavan testni MCP server (opciono)
